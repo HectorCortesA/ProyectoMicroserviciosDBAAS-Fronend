@@ -3,10 +3,12 @@ import {
   Plus,
   Clock,
   Search,
-  MoreVertical,
   LogOut,
   Trash2,
   Loader2,
+  Share2,
+  X,
+  User,
 } from "lucide-react";
 import { useDashboardMenuViewModel } from "../viewModels/useDashboardMenuViewModel";
 
@@ -18,7 +20,7 @@ export function DashboardMenu() {
       className="flex flex-col md:flex-row h-screen p-4 md:p-6 gap-6 max-w-7xl mx-auto"
       onClick={() => vm.setActiveMenuId(null)}
     >
-      {/* Left Sidebar */}
+      {/* Sidebar Izquierdo */}
       <div className="w-full md:w-1/3 flex flex-col gap-6">
         <div className="bg-[#d9d9d9] rounded-br-[40px] rounded-tl-xl rounded-tr-xl md:rounded-tl-none md:rounded-tr-none md:rounded-br-[60px] p-6 pb-10 shadow-xl shadow-black/20 text-[#232323]">
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight mb-1">
@@ -55,7 +57,7 @@ export function DashboardMenu() {
         </div>
       </div>
 
-      {/* Right Content */}
+      {/* Contenido Principal */}
       <div className="w-full md:w-2/3 flex flex-col mt-2 md:mt-12">
         <div className="flex items-center justify-between mb-6 px-4 md:px-6">
           <h2 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-3">
@@ -80,20 +82,22 @@ export function DashboardMenu() {
             {vm.loading ? (
               <div className="flex items-center justify-center py-12 text-gray-400 gap-2">
                 <Loader2 className="w-5 h-5 animate-spin" />
-                <span className="text-sm">Cargando bases de datos...</span>
+                <span>Cargando...</span>
               </div>
             ) : vm.databases.length === 0 ? (
               <div className="text-center py-10 text-gray-400 text-sm">
-                No hay bases de datos disponibles.
+                No hay bases de datos.
               </div>
             ) : (
               vm.databases.map((db) => (
                 <div
                   key={db.id}
-                  onClick={() => vm.navigate(`/dashboard/edit/${db.name}`)}
-                  className="group bg-white/5 hover:bg-white/15 border border-transparent hover:border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between cursor-pointer transition-all duration-200 relative"
+                  className="group bg-white/5 hover:bg-white/15 border border-transparent hover:border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between transition-all duration-200 relative"
                 >
-                  <div className="flex items-center gap-3 mb-2 sm:mb-0">
+                  <div
+                    onClick={() => vm.navigate(`/dashboard/edit/${db.name}`)}
+                    className="flex items-center gap-3 cursor-pointer flex-1"
+                  >
                     <div className="bg-[#54A796]/20 text-[#54A796] p-2.5 rounded-xl group-hover:bg-[#54A796] group-hover:text-white transition-colors">
                       <Database className="w-5 h-5" />
                     </div>
@@ -102,31 +106,35 @@ export function DashboardMenu() {
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4 text-xs text-gray-400">
-                    <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-4 text-xs text-gray-400 mt-3 sm:mt-0">
+                    <div className="flex items-center gap-1.5 mr-2">
                       <Clock className="w-3.5 h-3.5" />
-                      <span>Modificado: {db.lastModified}</span>
+                      <span>{db.lastModified}</span>
                     </div>
 
-                    <div className="relative">
+                    {/* BOTONES DIRECTOS (Sin menú desplegable) */}
+                    <div className="flex items-center gap-2">
                       <button
-                        onClick={(e) => vm.toggleMenu(e, db.id)}
-                        className="p-1.5 hover:bg-white/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100 sm:opacity-100"
+                        onClick={(e) => vm.openShareModal(e, db.name)}
+                        className="p-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg transition-colors flex items-center gap-1.5"
+                        title="Compartir"
                       >
-                        <MoreVertical className="w-4 h-4 text-gray-300" />
+                        <Share2 className="w-4 h-4" />
+                        <span className="hidden sm:inline font-medium">
+                          Asignar
+                        </span>
                       </button>
 
-                      {vm.activeMenuId === db.id && (
-                        <div className="absolute right-0 top-full mt-1 w-32 bg-[#2a2a2a] border border-white/10 rounded-lg shadow-xl overflow-hidden z-20">
-                          <button
-                            onClick={(e) => vm.handleDelete(e, db.id, db.name)}
-                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-white/5 hover:text-red-300 transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            Borrar
-                          </button>
-                        </div>
-                      )}
+                      <button
+                        onClick={(e) => vm.handleDelete(e, db.id, db.name)}
+                        className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors flex items-center gap-1.5"
+                        title="Eliminar"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span className="hidden sm:inline font-medium">
+                          Borrar
+                        </span>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -135,6 +143,81 @@ export function DashboardMenu() {
           </div>
         </div>
       </div>
+
+      {/* Modal Compartir */}
+      {vm.isShareModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-[#232323] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
+            <button
+              onClick={() => vm.setIsShareModalOpen(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+              <User className="w-5 h-5 text-[#54A796]" /> Asignar Usuario
+            </h3>
+
+            <div className="space-y-4 mb-8">
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-2 uppercase tracking-wider">
+                  Seleccionar Usuario
+                </label>
+                <select
+                  value={vm.targetEmail}
+                  onChange={(e) => vm.setTargetEmail(e.target.value)}
+                  className="w-full bg-[#2a2a2a] border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-[#54A796] transition-colors text-sm"
+                >
+                  {/* Validar si la lista está vacía */}
+                  {vm.usersList && vm.usersList.length > 0 ? (
+                    vm.usersList.map((u) => (
+                      <option key={u.email} value={u.email}>
+                        {u.username} ({u.email})
+                      </option>
+                    ))
+                  ) : (
+                    <option value="" disabled>
+                      No se encontraron usuarios
+                    </option>
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-2 uppercase tracking-wider">
+                  Permisos
+                </label>
+                <select
+                  value={vm.shareRole}
+                  onChange={(e) => vm.setShareRole(e.target.value)}
+                  className="w-full bg-[#2a2a2a] border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-[#54A796] transition-colors text-sm"
+                >
+                  <option value="lectura">Solo Lectura</option>
+                  <option value="escritura">Escritura y Edición</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => vm.setIsShareModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={vm.handleShare}
+                disabled={vm.sharing}
+                className="bg-[#54A796] hover:bg-[#468e7f] disabled:opacity-50 text-white px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2"
+              >
+                {vm.sharing && <Loader2 className="w-4 h-4 animate-spin" />}
+                Asignar Acceso
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

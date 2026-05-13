@@ -103,6 +103,10 @@ export const authService = {
       },
       false,
     ),
+  getUsers: () =>
+    apiFetch<{ users: { email: string; username: string }[] }>("/auth/users", {
+      method: "GET",
+    }),
 };
 
 // ─── Database Service ───────────────────────────────────────────
@@ -119,6 +123,12 @@ export const dbService = {
   delete: (payload: DatabaseModel) =>
     apiFetch<{ message: string }>("/db/delete", {
       method: "DELETE",
+      body: JSON.stringify(payload),
+    }),
+
+  assign: (payload: { db_name: string; target_email: string; role: string }) =>
+    apiFetch<{ message: string }>("/db/assign", {
+      method: "POST",
       body: JSON.stringify(payload),
     }),
 };
