@@ -118,8 +118,10 @@ export type ApiResult<T> =
   | {
       success: true;
       data: T;
+      error?: never;
     }
   | {
       success: false;
       error: ApiError;
+      data?: never;
     };

@@ -27,7 +27,7 @@ export function DashboardMenu() {
             Bienvenido,
           </h1>
           <p className="text-lg md:text-xl font-semibold text-gray-800">
-            Administrador
+            {vm.getUsername()}
           </p>
         </div>
 

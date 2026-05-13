@@ -65,7 +65,53 @@ export function useAuthViewModel() {
       return;
     }
 
+    const resData = result.data as Record<string, unknown> | undefined;
+    if (
+      !resData ||
+      typeof resData.access_token !== "string" ||
+      !resData.access_token ||
+      resData.error ||
+      resData.detail ||
+      (typeof resData.message === "string" &&
+        resData.message.toLowerCase().includes("incorrecta"))
+    ) {
+      const errorMsg =
+        typeof resData?.detail === "string"
+          ? resData.detail
+          : typeof resData?.error === "string"
+          ? resData.error
+          : typeof resData?.message === "string"
+          ? resData.message
+          : "Contraseña o credenciales incorrectas.";
+      toast.error(errorMsg);
+      return;
+    }
+
     tokenService.set(result.data.access_token);
+    localStorage.setItem("current_email", form.email);
+
+    if (mode === "register" && form.username) {
+      localStorage.setItem("current_username", form.username);
+    } else {
+      try {
+        const usersRes = await authService.getUsers();
+        if (usersRes.success && usersRes.data) {
+          const found = usersRes.data.users.find(
+            (u) => u.email.toLowerCase() === form.email.toLowerCase(),
+          );
+          if (found && found.username) {
+            localStorage.setItem("current_username", found.username);
+          } else {
+            localStorage.setItem("current_username", form.email.split("@")[0]);
+          }
+        } else {
+          localStorage.setItem("current_username", form.email.split("@")[0]);
+        }
+      } catch {
+        localStorage.setItem("current_username", form.email.split("@")[0]);
+      }
+    }
+
     toast.success(mode === "login" ? "¡Bienvenido!" : "¡Cuenta creada!");
     navigate("/dashboard");
   };

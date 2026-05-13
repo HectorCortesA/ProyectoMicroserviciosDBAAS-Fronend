@@ -31,25 +31,21 @@ export function useDashboardMenuViewModel() {
   const [shareRole, setShareRole] = useState("lectura");
   const [sharing, setSharing] = useState(false);
 
-  useEffect(() => {
-    fetchDatabases();
-  }, []);
-
   const fetchDatabases = async () => {
     setLoading(true);
     try {
       const res = await dbService.list();
-      if (res.success) {
-        const mappedDbs = res.data.databases.map((dbName) => ({
-          id: dbName,
-          name: dbName,
-          lastModified: "Reciente",
-        }));
-        setDatabases(mappedDbs);
-      } else {
+      if (!res.success) {
         console.error("Error al cargar DBs:", res.error.detail);
         setDatabases([]);
+        return;
       }
+      const mappedDbs = res.data.databases.map((dbName) => ({
+        id: dbName,
+        name: dbName,
+        lastModified: "Reciente",
+      }));
+      setDatabases(mappedDbs);
     } catch (error) {
       console.error("Error inesperado:", error);
     } finally {
@@ -57,8 +53,15 @@ export function useDashboardMenuViewModel() {
     }
   };
 
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchDatabases();
+  }, []);
+
   const handleLogout = () => {
     tokenService.clear();
+    localStorage.removeItem("current_username");
+    localStorage.removeItem("current_email");
     navigate("/");
   };
 
@@ -69,7 +72,7 @@ export function useDashboardMenuViewModel() {
 
   const handleDelete = async (
     e: React.MouseEvent,
-    id: string,
+    _id: string,
     name: string,
   ) => {
     e.stopPropagation();
@@ -82,13 +85,13 @@ export function useDashboardMenuViewModel() {
 
     try {
       const res = await dbService.delete({ db_name: name });
-      if (res.success) {
-        setDatabases((prev) => prev.filter((db) => db.name !== name));
-        toast.success("Base de datos eliminada correctamente");
-      } else {
+      if (!res.success) {
         toast.error("Error al eliminar: " + res.error.detail);
+        return;
       }
-    } catch (error) {
+      setDatabases((prev) => prev.filter((db) => db.name !== name));
+      toast.success("Base de datos eliminada correctamente");
+    } catch {
       toast.error("Error inesperado al eliminar");
     }
   };
@@ -108,7 +111,7 @@ export function useDashboardMenuViewModel() {
           setTargetEmail(res.data.users[0].email);
         }
       }
-    } catch (error) {
+    } catch {
       toast.error("No se pudo cargar la lista de usuarios");
     }
   };
@@ -127,14 +130,14 @@ export function useDashboardMenuViewModel() {
         role: shareRole,
       });
 
-      if (res.success) {
-        toast.success(res.data?.message || "Acceso asignado");
-        setIsShareModalOpen(false);
-        setTargetEmail("");
-      } else {
+      if (!res.success) {
         toast.error(res.error?.detail || "Error al asignar");
+        return;
       }
-    } catch (error) {
+      toast.success(res.data?.message || "Acceso asignado");
+      setIsShareModalOpen(false);
+      setTargetEmail("");
+    } catch {
       toast.error("Error al compartir");
     } finally {
       setSharing(false);
@@ -144,6 +147,24 @@ export function useDashboardMenuViewModel() {
   const filteredDatabases = databases.filter((db) =>
     db.name.toLowerCase().includes(search.toLowerCase()),
   );
+
+  const getUsername = () => {
+    const stored = localStorage.getItem("current_username");
+    if (stored) return stored;
+
+    const token = tokenService.get();
+    if (!token) return "Usuario";
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      if (payload.username) return payload.username;
+      if (payload.sub) return payload.sub.split("@")[0];
+      return "Usuario";
+    } catch {
+      return "Usuario";
+    }
+  };
+
+  const username = getUsername();
 
   return {
     databases: filteredDatabases,
@@ -168,5 +189,7 @@ export function useDashboardMenuViewModel() {
     sharing,
     openShareModal,
     handleShare,
+    username,
+    getUsername,
   };
 }
